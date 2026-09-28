@@ -1,0 +1,31 @@
+======================================================
+COE67-222 Operating Systems - Lab 08 Report
+Name: นายอภิสิทธิ์   สุขเสนา
+Student ID: 67130302
+======================================================
+1. Disk Scheduling (Phase 2):
+Looking at the output of `disk_scheduler.py`, why did the SCAN algorithm result in a significantly lower "Total Head Movement" compared to FCFS? Explain the logic behind the Elevator behavior.
+
+Answer:
+อัลกอริทึม FCFS จะประมวลผลคำขอตามลำดับก่อน-หลังที่ส่งเข้ามา ทำให้หัวอ่านของดิสก์ต้องเคลื่อนที่สลับไปมาระหว่าง Cylinder ที่มีค่ามากและค่าน้อย (Wild jumping) แล้วกระโดดกลับมา 37 ทำให้เกิด Total Head Movement รวมสูงถึง 640 cylinders 
+
+ในทางตรงกันข้าม SCAN ทำงานเสมือน "ลิฟต์" โดยจะจัดเรียงและกวาดให้บริการคำขอที่อยู่ตามเส้นทางไปในทิศทางเดียวกันก่อน  จากนั้นจึงสลับทิศทางกวาดลงมาเก็บคำขอฝั่งตรงข้าม การเคลื่อนที่เป็นทิศทางต่อเนื่องแบบทางเดียวทำให้ไม่มีการกระโดดข้ามแทร็กไปมาอย่างไร้ทิศทาง 
+ส่งผลให้ Seek Time และระยะการเคลื่อนที่ของหัวอ่านลดลงเหลือเพียง 236 cylinders 
+
+2. I/O Bound Concept:
+If an Operating System is described as being "I/O Bound" during a task, what does that actually mean for the CPU? Is the CPU at 100% usage or is it mostly idle? Why?
+
+Answer:
+ภาวะ "I/O Bound" หมายความว่า อัตราความเร็วในการทำงานของทั้งระบบถูกจำกัดด้วยความเร็วของอุปกรณ์ I/O  เพราะ CPU และ RAM ทำงานได้เร็วกว่าหน่วยเก็บข้อมูลหลายพันถึงล้านเท่า
+
+สำหรับ CPU ในสภาวะนี้ CPU จะ "ส่วนใหญ่ไม่ได้ทำงานหรืออยู่ในสถานะ Idle " ไม่ได้แตะ 100% เพราะ Process ที่รันอยู่ต้องรอข้อมูลที่อ่าน/เขียนจากดิสก์ ส่งผลให้ Process ถูก OS ย้ายไปอยู่ในสถานะ "I/O Wait" หรือ Blocked state เพื่อรอคอย Hardware I/O ทำให้ CPU ไม่มีงานคำนวณและต้องนั่งรอเฉย ๆ
+
+3. AI Industry Connection (Phase 3):
+Explain why storing an AI image dataset as 1,000,000 separate `.jpg` files causes high I/O overhead and GPU starvation compared to packing them into a single sequential binary format (e.g., TFRecord, WebDataset, or HDF5).
+
+Answer:
+การเก็บเป็นไฟล์แยกขนาดเล็ก 1,000,000 ไฟล์ ก่อให้เกิดปัญหา
+1. High OS Overhead: ในทุก ๆ 1 ไฟล์ OS ต้องเสียเวลาค้นหา Inode / Metadata, ตรวจสอบสิทธิ์การเข้าถึงไฟล์ (File permissions), ทำ System Calls เปิด (open) และปิด (close) ไฟล์ซ้ำ ๆ ถึง 1 ล้านรอบ รวมถึงเกิด Random I/O Lookup บน Storage Block
+2. GPU Starvation: GPU มีขีดความสามารถในการคำนวณสูงมาก แต่เนื่องจากการอ่านไฟล์ย่อยติดคอขวดที่ I/O ทำให้ Pipeline ส่ง Batch ข้อมูลไปยัง VRAM ช้ากว่าความเร็วที่ GPU ประมวลผลได้ GPU จึงต้องอยู่ในสถานะ Idle  รอข้อมูลจาก Disk
+
+การรวมเป็นไฟล์ Binary ต่อเนื่องขนาดใหญ่ไฟล์เดียว  ทำให้ OS ทำการเปิดไฟล์เพียงครั้งเดียวและอ่านข้อมูลแบบ Sequential I/O ทำให้ช่วยลด System Call และ Metadata Lookup ทั้งหมดลง ทำให้ดิสก์สตรีมข้อมูลป้อนเข้า Memory และ GPU ได้อย่างต่อเนื่องเต็มประสิทธิภาพ
