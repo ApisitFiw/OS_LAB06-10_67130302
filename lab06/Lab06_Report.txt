@@ -1,0 +1,26 @@
+======================================================
+COE67-222 Operating Systems - Lab 06 Report
+Name: นายอภิสิทธิ์  สุขเสนา 
+Student ID: 67130302
+======================================================
+1. FIFO vs LRU (Phase 2):
+In the `page_replacement.py` script, why did the LRU algorithm perform better (have fewer page faults) than the FIFO algorithm for the given reference string? Explain how LRU decides which page to evict.
+
+คำตอบ:
+ LRU มีประสิทธิภาพดีกว่า เกิดเพียง 7 faults เทียบกับ FIFO ที่เกิดถึง 9 faults เพราะ LRU ใช้หลักการ Temporal Locality โดยพิจารณาประวัติการใช้งานจริงของเพจ เพจที่เพิ่งถูกเรียกใช้จะมีแนวโน้มถูกเรียกใช้อีกในอนาคตอันใกล้ ทำให้เพจสำคัญยังคงอยู่ใน RAM
+ ดังนั้น LRU เมื่อเกิด Page Fault และ RAM เต็ม LRU จะเลือกปลด (evict) เพจที่ "ไม่ได้ถูกเรียกใช้งานเป็นเวลานานที่สุด" (ตัวที่อยู่ index 0 ของ frames) ออกไป เพื่อนำเพจใหม่เข้ามาแทนที่ ในขณะที่ FIFO ปลดเพจที่เข้ามาก่อนเสมอโดยไม่สนใจว่าเพจนั้นกำลังจะถูกเรียกใช้อีกหรือไม่
+
+2. Understanding Thrashing (Phase 3):
+Based on your observation of `ai_thrashing.py`, define "Thrashing" in your own words. Why is the processing time significantly higher in Scenario 2?
+
+คำตอบ:
+Thrashing เป็นภาวะที่ระบบปฏิบัติการใช้เวลาและทรัพยากรส่วนใหญ่ไปกับการสลับข้อมูล (Swapping/Paging) ระหว่าง RAM กับ Disk มากกว่าการประมวลผลคำสั่งของโปรแกรมจริง จนทำให้ประสิทธิภาพของระบบหยุดชะงัก
+เหตุผลที่เวลาใน Scenario 2 สูงขึ้นอย่างมาก (ใช้เวลา 14.9556 วินาที เทียบกับ 2.3313 วินาที หรือช้าลงประมาณ 6 เท่า) เพราะหน่วยความจำเต็ม ระบบจึงต้องอ่านและเขียนข้อมูลลงไฟล์บน Disk (Disk I/O) ซ้ำ ๆ ทุกรอบ ซึ่งความเร็วในการเข้าถึงและส่งถ่ายข้อมูลของอุปกรณ์จัดเก็บข้อมูลช้ากว่า Physical RAM อย่างมหาศาล
+
+3. AI Engineering Decision:
+If you are training an AI model and your system begins to thrash because the RAM is full, lowering the `batch_size` in your Python code is a common solution. How does lowering the `batch_size` help the Operating System resolve the Thrashing problem?
+
+คำตอบ:
+การลด `batch_size` จะช่วยลดปริมาณข้อมูลอินพุต รวมถึงขนาดของ Activation tensors ที่ต้องโหลดเข้าสู่หน่วยความจำในแต่ละขั้นตอนของการประมวลผล (Iteration)
+ส่งผลให้ขนาด Working Set ของโปรแกรมเล็กลงจนสามารถจุอยู่ใน Physical RAM จริงที่มีอยู่ได้ทั้งหมด เมื่อข้อมูลพอดีกับ RAM ระบบปฏิบัติการก็ไม่จำเป็นต้อง Swapping เพจข้อมูลลงฮาร์ดดิสก์อีกต่อไป 
+จึงช่วยหยุดและป้องกันการเกิด Thrashing ได้โดยตรง
