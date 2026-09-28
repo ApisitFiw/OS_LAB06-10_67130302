@@ -1,0 +1,49 @@
+======================================================
+COE67-222 Operating Systems - Lab 10 Report (Final)
+Name: อภิสิทธิ์ สุขเสนา
+Student ID: 67130302
+======================================================
+1. The Role of the Operating System:
+In this mini-project, our Python script simulated the major responsibilities of an Operating System. 
+Match the specific code behavior in `ultimate_cluster_os.py` to the corresponding OS concept you learned throughout the semester:
+
+Answer:
+- File System & Permissions (Lab 9): 
+  จำลองผ่านโค้ดตรวจสอบไฟล์:
+  if not os.path.exists(dataset_path):
+      print(f"❌ [{job_name}] FAILED: Dataset '{dataset_path}' not found or Permission Denied.")
+  เหตุผลที่ Workload D ล้มเหลว:
+  Workload D ระบุไฟล์ 'secret_keys.txt' ซึ่งไม่มีอยู่ในระบบ (หรือไม่มีสิทธิ์เปิดอ่าน) ตัวจำลอง OS จึงทำหน้าที่เป็น File System Gatekeeper ตรวจสอบความถูกต้องและสิทธิ์ก่อน หากไม่ผ่านจะ Reject งานทิ้งทันที ช่วยป้องกันการเข้าถึงข้อมูลที่ผิดพลาดและไม่ทำให้ทรัพยากรเครื่องสูญเปล่า
+
+- Memory Management (Labs 5/6):
+  จำลองผ่านลูปตรวจสอบหน่วยความจำ:
+  while True:
+      with self.ram_lock:
+          if self.available_ram_gb >= req_ram:
+              self.available_ram_gb -= req_ram
+              break
+      time.sleep(0.5)
+  การป้องกัน Thrashing:
+  หากระบบปล่อยให้ทุกงานดึง RAM ไปพร้อมกันจนเกินขีดจำกัดจริง (Overcommit) ระบบจะเกิด Thrashing (การสลับหน้าข้อมูล Page Fault ซ้ำ ๆ จนระบบค้าง) แต่ระบบนี้ใช้ Busy-waiting พร้อม Lock ควบคุม หาก RAM ที่เหลือไม่เพียงพอกับที่ร้องขอ กระบวนการจะถูกสั่งให้รอ (Wait State) จนกว่างานอื่นจะคืน RAM กลับมา ทำให้การใช้งาน RAM ไม่เกิน 64GB ตลอดการทำงาน
+
+
+
+2. Hardware Utilization:
+Look at the output of your Live Dashboard. Explain how the OS successfully ran Workload A (LLaMA Training), Workload B (Preprocessing), and Workload C (Inference) AT THE SAME TIME without crashing. Why didn't they block each other?
+
+Answer:
+ระบบสามารถรัน Workload A, B, และ C ได้พร้อมกัน (Concurrency) โดยไม่บล็อกกัน เพราะลักษณะของความต้องการทรัพยากรแยกจากกันอย่างลงตัวและไม่เกินเพดานของฮาร์ดแวร์:
+1. ด้าน RAM: ทรัพยากรทั้งหมดมี 64GB งาน Workload A ใช้ 40GB, Workload B ใช้ 16GB, และ Workload C ใช้ 2GB รวมเป็น 58GB ซึ่งยังคงเหลือ 6GB ในช่วงพีค ทำให้ไม่มีงานใดติดคอขวดด้านหน่วยความจำ
+2. ด้าน GPU: 
+   - Workload A ต้องการประมวลผลโมเดลขนาดใหญ่ จึงครอบครอง GPU 0, 1, 2
+   - Workload B เป็นงาน Preprocessing ที่เป็น CPU/IO-Bound จึงขอ 0 GPU และเข้าทำงานบน CPU ได้ทันทีโดยไม่ต้องรอคิว GPU
+   - Workload C ต้องการเพียง GPU เดียว จึงเข้าไปครอบครอง GPU 3 ซึ่งเป็นตัวเดียวที่ว่างอยู่
+ด้วยการออกแบบ Resource Allocation แบบแยกแยะประเภทงาน ทำให้เกิด Hardware Utilization สูงสุด (GPU 100% busy, RAM ใช้ไปเกือบเต็ม) โดยไม่มีงานใดต้องบล็อกรอซึ่งกันและกัน
+
+3. Course Reflection (AI Engineering Context):
+You are now applying for a role as a Machine Learning Operations (MLOps) Engineer. 
+Write a short paragraph explaining how understanding Operating Systems (Process queues, RAM/Virtual Memory limits, Deadlock avoidance, File systems) gives you an advantage over a programmer who only knows how to write basic Python/PyTorch scripts.
+
+Answer:
+ในการทำงานจริงระดับ Production ของระบบ AI ปัญหาที่พบบ่อยและสร้างความเสียหายสูงสุดไม่ได้เกิดจากโมเดลคำนวณไม่ตรง แต่เกิดจากคอขวดของโครงสร้างพื้นฐานระดับระบบปฏิบัติการ เช่น การเกิด GPU Starvation จากการอ่าน I/O ไม่ทัน, หรือระบบ Distributed Training หยุดชะงัก (Hang) จากสภาวะ Deadlock ในการสื่อสารข้ามโหนด
+ความรู้ด้าน Operating Systems ทำให้วิศวกร MLOps สามารถมองเห็นภาพรวมตั้งแต่ระดับ Low-level Hardware, การตั้งค่าคอนเทนเนอร์, คิวงานของ Orchestrator , ไปจนถึงการแพ็กไฟล์ข้อมูลแบบ Sequential เพื่อรีดประสิทธิภาพฮาร์ดแวร์มูลค่ามหาศาลได้อย่างคุ้มค่า 
