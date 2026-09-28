@@ -1,0 +1,32 @@
+======================================================
+COE67-222 Operating Systems - Lab 09 Report
+Name: อภิสิทธิ์ สุขเสนา
+Student ID: 67130302
+======================================================
+1. Inodes and Metadata:
+In the `inode_inspector.py` script, we printed the "Inode Number". If you rename the file using the Linux `mv` command, will the Inode Number change? Why or why not? (Hint: Think about how the OS separates the file name from the actual data).
+
+Answer:
+หมายเลข Inode Number จะ "ไม่เปลี่ยนแปลง" 
+เพราะ ในโครงสร้างของระบบไฟล์แบบ POSIX/Linux ข้อมูลชื่อไฟล์ (File Name) จะถูกเก็บไว้ใน Directory Entry แยกต่างหากจากตัวข้อมูลไฟล์จริง โดย Directory Entry จะทำหน้าที่เป็นเพียงตารางเชื่อมโยง (Pointer / Mapping) ระหว่าง "ชื่อไฟล์" กับ "Inode Number" เท่านั้น ส่วน Inode จะเป็นตัวเก็บ Metadata และชี้ไปยัง Data Blocks บนดิสก์
+เมื่อเราใช้คำสั่ง `mv` เพื่อเปลี่ยนชื่อไฟล์หรือย้ายไฟล์ภายในพาร์ติชันเดียวกัน OS จะทำเพียงแค่อัปเดตรายการชื่อใน Directory Entry ให้ชี้ไปยัง Inode เดิม โดยไม่มีการสร้าง Inode ใหม่หรือเคลื่อนย้ายบล็อกข้อมูลแต่อย่างใด
+
+2. POSIX Permissions:
+If you want to set a file's permission so that the Owner has Read/Write/Execute (7), the Group has Read/Execute (5), and Others have absolutely no access (0), what would be the 3-digit octal number you pass into `os.chmod()`? 
+
+Answer:
+เลขฐานแปด (Octal) 3 หลัก คือ `750` (หรือเขียนในรูปโค้ด Python คือ `0o750`)
+
+การคำนวณสิทธิ์:
+- Owner (เจ้าของไฟล์): Read (4) + Write (2) + Execute (1) = 7
+- Group (กลุ่ม): Read (4) + Write (0) + Execute (1) = 5
+- Others (ผู้อื่น): Read (0) + Write (0) + Execute (0) = 0
+
+3. The AI Context:
+Why is it safer to rely on Operating System file permissions (like `os.chmod(0o444)`) to protect production model weights rather than relying solely on application-level logic or Python try-except blocks?
+
+Answer:
+การป้องกันระดับ OS File Permissions ปลอดภัยและรัดกุมกว่า Application-level logic หรือ try-except เพราะ
+- Kernel-level Enforcement: สิทธิ์ของระบบปฏิบัติการถูกควบคุมและบังคับใช้โดยตรงที่ระดับ OS Kernel ผ่าน System Call ไม่ว่าสคริปต์ที่รันจะเขียนด้วยภาษาใด (Python, C++, Shell script) หรือสั่งผ่าน CLI หากผู้ใช้ไม่มีสิทธิ์เขียน Kernel จะปฏิเสธการเปิดไฟล์ทันทีก่อนที่คำสั่งใด ๆ จะเข้าถึงดิสก์
+- ป้องกันข้อผิดพลาดจากมนุษย์และโค้ดมีบั๊ก (Human Error & Software Bugs): หากอาศัยเพียง try-except หรือตรรกะในโปรแกรม เมื่อมีใครเขียนโค้ดพลาด เช่น ลืมดักจับข้อผิดพลาด หรือเผลอเปิดไฟล์โมเดลโหมด write (`"w"`) โค้ดที่มีบั๊กนั้นจะทำลายไฟล์โมเดลมูลค่าสูงทิ้งทันที
+- ปลอดภัยในสภาพแวดล้อมใช้งานร่วมกัน (Shared Cluster / HPC): ในระบบที่นักวิจัยหรือวิศวกรหลายคนเข้าถึงเครื่องร่วมกัน การล็อกสิทธิ์ที่ตัวไฟล์จริง ๆ (Read-Only) จะป้องกันไม่ให้ผู้ใช้อื่นหรือ Process อื่นที่ทำงานขนานกันมาเขียนทับหรือลบไฟล์โดยไม่ได้ตั้งใจ
